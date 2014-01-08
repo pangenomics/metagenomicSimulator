@@ -87,28 +87,58 @@ GetOptions (
      "xcoord=i" => \$xCoord,
      "ycoord=i" => \$yCoord,
      "multiplexidentifier=s" => \$multiplexIdentifier,
-     "qualityfiles=s" => \$qualityFiles,
+     "qualityFiles=s" => \$qualityFiles,
      "randomFolder=i" => \$randomFolder
      );
 
 pod2usage(-verbose => 2) if $help;
 
 if ($outfolder eq ""){
-print("outfolder not specified, please run simulatorForSolexaReads.pl --help for more information\n");
+	print("outfolder not specified, please run simulatorForSolexaReads.pl --help for more information\n");
 exit;
 }
 if ($abundanceFile eq ""){
-print("abundanceFile not specified, please run simulatorForSolexaReads.pl --help for more information\n");
+	print("abundanceFile not specified, please run simulatorForSolexaReads.pl --help for more information\n");
 exit;
 }
 if ($genomeFolder eq ""){
-print("genomeFolder not specified, please run simulatorForSolexaReads.pl --help for more information\n");
+	print("genomeFolder not specified, please run simulatorForSolexaReads.pl --help for more information\n");
 exit
 }
 if ($qualityFiles eq ""){
-print("qualityFiles not specified, please run simulatorForSolexaReads.pl --help for more information\n");
+	print("qualityFiles not specified, please run simulatorForSolexaReads.pl --help for more information\n");
 exit
 }
+
+unless(-e $abundanceFile){
+	print("abundanceFile not existent\n");
+	exit;
+}
+unless(-d $genomeFolder){
+	print("genomeFolder not existent\n");
+	exit;
+}
+unless(-e $outfolder){
+	mkdir $outfolder;
+}
+
+if ($qualityFiles =~ /\,/) {
+	my @qualityFilesArray = split(/\,/,$qualityFiles);
+	for my $qualityfile (@qualityFilesArray){
+		unless(-e $qualityfile){
+			print("$qualityfile not existent\n");
+			exit;	
+		}
+	}
+}
+else{
+	unless(-e $qualityFiles){
+		print("$qualityFiles not existent\n");
+		exit;
+	}
+}
+
+
 if ($genomeInfo eq ""){
 $genomeInfo  = $abundanceFile ;
 $genomeInfo  =~ s/\.[^\.]+$/_ginf.txt/;
@@ -119,7 +149,7 @@ createAutoInfo($abundanceFile,$genomeInfo,$genomeFolder);
 
 my $rawreadsname = "rawReadsXXXX";
 
-my $rawreadsfolder = $outfolder;
+my $rawreadsfolder = $outfolder .  "rawReads";
 if ($randomFolder ==1){
      $rawreadsfolder = tempdir( $rawreadsname, DIR => $outfolder);
 }
@@ -381,6 +411,17 @@ $fasta_2_obj_entry->id eq $qual_2_obj_entry->id;
    $fastq_2_obj->write_fastq($bioSeqQual_2_obj);
 }
 
+my $symlink_exists = eval { symlink("",""); 1 };
+if ($symlink_exists){
+	symlink "$fastqfolder\/$outprefix\.1.fq", "$outfolder\/$outprefix\.1.fq";
+	symlink "$fastqfolder\/$outprefix\.2.fq", "$outfolder\/$outprefix\.2.fq";
+	
+	print "find output here: $outfolder\/$outprefix\.1.fq and $outfolder\/$outprefix\.2.fq";
+}
+else{
+	print "find output here: $fastqfolder\/$outprefix\.1.fq and $fastqfolder\/$outprefix\.2.fq";
+}
+
 #system "/g/bork2/sunagawa/bin/convert_project -f fasta -t fastq $qualityfolder\/$outprefix\.1.fasta $fastqfolder\/$outprefix\.1";
 #system "/g/bork2/sunagawa/bin/convert_project -f fasta -t fastq $qualityfolder\/$outprefix\.2.fasta $fastqfolder\/$outprefix\.2";
 
@@ -554,9 +595,9 @@ simulatorForSolexaReads.pl [options]
 
      Standard deviation from the mean insert size.
 
-=item B<--qualityfiles>
+=item B<--qualityFiles>
 
-     location of quality files for sequencing error and quality generation. Note that the first file can be given by just specifying it's location and multiple files can be given using folling scheme --qualityfiles="file1.qual -q file2.qual -q file3.qual".
+     location of quality files for sequencing error and quality generation. Note that the first file can be given by just specifying it's location and multiple files can be given using folling scheme --qualityFiles="file1.qual -q file2.qual -q file3.qual".
 
 =item B<--binfolder>
 
